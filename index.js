@@ -87,6 +87,7 @@ function addDepartment() {
   }).then((data) => {
     db.query("INSERT INTO department (department_name) VALUES(?)", [data.department], (err, results) => {
       console.log("Department has been added.")
+      options()
     })
   })
 }
@@ -94,33 +95,138 @@ function addDepartment() {
 function addRole() {
   let departments = []
   db.query('SELECT * FROM department', function (err, results) {
-    departments = departments.concat(results);
-    console.log(departments);
+    departments = results.map(({ department_name }) => ({ name: department_name }));
+    return inquirer.prompt([{
+      type: "input",
+      name: "role_title",
+      message: "What is the name of the new role?"
+    },{
+      type: "input",
+      name: "role_salary",
+      message: "What is the salary for this role?"
+    },{
+      type: "list",
+      name: "department_id",
+      message: "Choose a department.",
+      choices: departments
+    }])
+    .then((data) => {
+      let targetDepartment = departments.find(department => department.name === data.department_id);
+      let index = departments.indexOf(targetDepartment);
+      db.query("INSERT INTO role (role_title, role_salary, department_id) VALUES(?, ?, ?)", [data.role_title, data.role_salary, index], (err, results) => {
+        if (err) throw err;
+        console.table(results);
+        console.log("Role has been added.")
+        options()
+      });
   });
+})};
+
+async function addEmployee() {
+  let managers = [];
+  let results = await new Promise((resolve, reject) => {
+    db.query('SELECT employee_first_name FROM employee WHERE role_id = 3', function (err, results) {
+      if (err) reject(err);
+      resolve(results);
+    });
+  });
+  managers = results.map(({ employee_first_name }) => ({ name: employee_first_name }));
+  // console.log(managers);
+
+
   return inquirer.prompt([{
-    type: "input",
-    name: "role_title",
-    message: "What is the name of the new role?"
-  },{
-    type: "input",
-    name: "role_salary",
-    message: "What is the salary fo this role?"
+        type: "input",
+        message: "What's the first name of the employee?",
+        name: "employee_first_name"
+      },{
+        type: "input",
+        message: "What's the last name of the employee?",
+        name: "employee_last_name"
+      },{
+        type: "input",
+        message: "What is the employee's role id number?",
+        name: "role_id"
+      },{
+        type: "list",
+        message: "What is the manager name?",
+        name: "manager_id",
+        choices: managers
+      }])
+      .then((data) => {
+        let targetManager = managers.find(manager => manager.name === data.manager_id);
+        // console.log(targetManager);
+      let index = managers.indexOf(targetManager) +1;
+      // console.log(index);
+      db.query("INSERT INTO employee (employee_first_name, employee_last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [data.employee_first_name, data.employee_last_name, data.role_id, index], (err, results) => {
+        if (err) throw err;
+        console.log("Employee has been added.")
+        options();
+      });
+    });
+}
+
+
+async function updateEmployeeRole() {
+  // create an update employee role
+  let employees = [];
+  let roles = [];
+  let employeeResults = await new Promise((resolve, reject) => {
+    db.query('SELECT employee_last_name FROM employee', function (err, results) {
+      if (err) reject(err);
+      resolve(results);
+      employees = results.map(({ employee_last_name }) => ({ name: employee_last_name })); 
+    });
+  });
+  let roleResults = await new Promise((resolve, reject) => {
+    db.query('SELECT role_title FROM role', function (err, results) {
+      if (err) reject(err);
+      resolve(results);
+      roles = results.map(({ role_title }) => ({ name: role_title })); 
+    });
+  });    
+  
+  // db.query('SELECT role_title FROM role', function (err, results) {
+  //   roles = results.map(({ role_title }) => ({ name: role_title }));  
+  return inquirer.prompt([
+    {
+    type: "list",
+    name: "employee",
+    message: "Which employee would you like to update?",
+    choices: employees
   },{
     type: "list",
-    name: "department_id",
-    message: "Choose a department.",
-    choices: departments
-  }
+    name: "role",
+    message: "What is the new role?",
+    choices: roles
+  }])
+  .then((data) => {
+    let targetEmployee = employees.find(employee => employee.name === data.employee);
+    console.log(targetEmployee);
+    let employeeIndex = employees.indexOf(targetEmployee) +1;
+    console.log(employeeIndex);
 
-])
-}
+    let targetRole =roles.find(role => role.name === data.role);
+    console.log(targetRole);
+    let roleIndex = roles.indexOf(targetRole) +1;
+    console.log(roleIndex);
 
-function addEmployee() {
-  // create an add an employee
-}
+    // sql query to update employee with new role
+    db.query(`
+      UPDATE employee 
+      SET role_id = ${roleIndex} 
+      WHERE employee_id = ${employeeIndex}
+    `, function(err, result) {
+      if( err ){
+        console.log("There was a problem")
+        console.log(err)
+        options();
+      } else {
+        console.log("Thank god for Gary");
+        options();
+      }
+    })
+  })};
 
-function updateEmployeeRole() {
-  // create an update employee role
-}
+
 
 options();
