@@ -115,7 +115,7 @@ function addRole() {
       // let index = departments.indexOf(targetDepartment);
       db.query("INSERT INTO role (role_title, role_salary, department_id) VALUES(?, ?, ?)", [data.role_title, data.role_salary, data.department_id], (err, results) => {
         if (err) throw err;
-        console.table(results);
+        // console.table(results);
         console.log("Role has been added.")
         options()
       });
@@ -144,7 +144,7 @@ async function addEmployee() {
     return { name: role.role_title, value: role.role_id }
    })
 
-  console.log(roleChoices)
+  // console.log(roleChoices)
 
   return inquirer.prompt([{
         type: "input",
@@ -214,14 +214,14 @@ async function updateEmployeeRole() {
   }])
   .then((data) => {
     let targetEmployee = employees.find(employee => employee.name === data.employee);
-    console.log(targetEmployee);
+    // console.log(targetEmployee);
     let employeeIndex = employees.indexOf(targetEmployee) +1;
-    console.log(employeeIndex);
+    // console.log(employeeIndex);
 
     let targetRole =roles.find(role => role.name === data.role);
-    console.log(targetRole);
+    // console.log(targetRole);
     let roleIndex = roles.indexOf(targetRole) +1;
-    console.log(roleIndex);
+    // console.log(roleIndex);
 
     // sql query to update employee with new role
     db.query(`
