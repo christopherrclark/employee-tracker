@@ -95,7 +95,7 @@ function addDepartment() {
 function addRole() {
   let departments = []
   db.query('SELECT * FROM department', function (err, results) {
-    departments = results.map(({ department_name }) => ({ name: department_name }));
+    departments = results.map(({ department_name, department_id }) => ({ name: department_name, value: department_id }));
     return inquirer.prompt([{
       type: "input",
       name: "role_title",
@@ -111,9 +111,9 @@ function addRole() {
       choices: departments
     }])
     .then((data) => {
-      let targetDepartment = departments.find(department => department.name === data.department_id);
-      let index = departments.indexOf(targetDepartment);
-      db.query("INSERT INTO role (role_title, role_salary, department_id) VALUES(?, ?, ?)", [data.role_title, data.role_salary, index], (err, results) => {
+      // let targetDepartment = departments.find(department => department.name === data.department_id);
+      // let index = departments.indexOf(targetDepartment);
+      db.query("INSERT INTO role (role_title, role_salary, department_id) VALUES(?, ?, ?)", [data.role_title, data.role_salary, data.department_id], (err, results) => {
         if (err) throw err;
         console.table(results);
         console.log("Role has been added.")
@@ -133,6 +133,18 @@ async function addEmployee() {
   managers = results.map(({ employee_first_name }) => ({ name: employee_first_name }));
   // console.log(managers);
 
+  const roles = await new Promise((resolve, reject) => {
+    db.query("SELECT role_id, role_title FROM role", function(err, results){
+      if (err) reject(err);
+      resolve(results);
+    })
+  })
+
+  const roleChoices = roles.map( role => {
+    return { name: role.role_title, value: role.role_id }
+   })
+
+  console.log(roleChoices)
 
   return inquirer.prompt([{
         type: "input",
@@ -143,9 +155,10 @@ async function addEmployee() {
         message: "What's the last name of the employee?",
         name: "employee_last_name"
       },{
-        type: "input",
-        message: "What is the employee's role id number?",
-        name: "role_id"
+        type: "list",
+        name: "role_id",
+        message: "What is the employee's role?",
+        choices: roleChoices
       },{
         type: "list",
         message: "What is the manager name?",
@@ -221,7 +234,7 @@ async function updateEmployeeRole() {
         console.log(err)
         options();
       } else {
-        console.log("Thank god for Gary");
+        console.log("Your employees role has been updated successfully!");
         options();
       }
     })
